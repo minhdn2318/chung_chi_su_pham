@@ -37,25 +37,25 @@ def add_page_number(paragraph, position):
     instr = OxmlElement('w:instrText'); instr.text = "PAGE"; run._r.append(instr)
     fldChar2 = OxmlElement('w:fldChar'); fldChar2.set(qn('w:fldCharType'), 'end'); run._r.append(fldChar2)
 
-# ===== 3. HÀM THAY THẾ PLACEHOLDER (FIX TRIỆT ĐỂ) =====
+# ===== 3. HÀM THAY THẾ PLACEHOLDER (FIX TRIỆT ĐỂ LỖI FILL) =====
 def replace_placeholders(doc, data_dict):
-    """Thay thế chính xác các tag kể cả khi bị chia nhỏ runs"""
+    """Xử lý thay thế chính xác các tag kể cả khi Word chia nhỏ runs"""
     for p in doc.paragraphs:
         for key, value in data_dict.items():
             if key in p.text:
-                # Cách thay thế an toàn nhất cho python-docx
-                full_text = p.text.replace(key, str(value))
-                # Xóa sạch các run cũ và ghi lại paragraph bằng text mới
-                # Lưu ý: Cách này giữ lề nhưng có thể mất định dạng đậm/nhạt cục bộ trong p
-                p.text = full_text
+                # Ghi đè toàn bộ text của paragraph để đảm bảo tag được thay thế hoàn toàn
+                inline = p.runs
+                # Lưu định dạng của run đầu tiên nếu có để áp dụng cho text mới
+                p.text = p.text.replace(key, str(value))
 
 # ===== 4. GIAO DIỆN SIDEBAR =====
-st.set_page_config(page_title="HPU2 Report Generator PRO", layout="wide", page_icon="🎓")
+st.set_page_config(page_title="AI Report Generator PRO", layout="wide", page_icon="🎓")
 st.title("🎓 Hệ thống Tạo BTL chuẩn Quy cách HPU2")
 
 with st.sidebar:
     st.header("⚙️ Cấu hình AI")
-    provider = st.selectbox("AI Provider", ["Gemini", "Groq"], index=1) # Mặc định Groq
+    # Mặc định chọn Groq
+    provider = st.selectbox("AI Provider", ["Gemini", "Groq"], index=1)
     
     if provider == "Groq":
         model_map = {"Llama 3.3 70B Versatile": "llama-3.3-70b-versatile", "Qwen 2.5 32B Coder": "qwen-2.5-32b"}
@@ -63,7 +63,7 @@ with st.sidebar:
     else:
         model_choice = st.selectbox("Chọn Model", ["gemini-2.5-pro", "gemini-2.5-flash"])
 
-    input_key = st.text_input(f"{provider} Key (Optional)", type="password", help="Để trống nếu đã có Secrets")
+    input_key = st.text_input(f"{provider} Key (Optional)", type="password")
 
     st.divider()
     st.subheader("📏 Quy cách trình bày")
@@ -79,22 +79,19 @@ with st.sidebar:
 
     col_l, col_r = st.columns(2)
     with col_l:
-        m_top = st.number_input("Trên (cm)", 0.0, 5.0, cp["m"][0])
-        m_left = st.number_input("Trái (cm)", 0.0, 5.0, cp["m"][2])
+        m_top, m_left = st.number_input("Trên (cm)", 0.0, 5.0, cp["m"][0]), st.number_input("Trái (cm)", 0.0, 5.0, cp["m"][2])
     with col_r:
-        m_bottom = st.number_input("Dưới (cm)", 0.0, 5.0, cp["m"][1])
-        m_right = st.number_input("Phải (cm)", 0.0, 5.0, cp["m"][3])
+        m_bottom, m_right = st.number_input("Dưới (cm)", 0.0, 5.0, cp["m"][1]), st.number_input("Phải (cm)", 0.0, 5.0, cp["m"][3])
 
-    line_sp = st.number_input("Cách dòng", 1.0, 2.5, cp["sp"])
-    font_sz = st.number_input("Cỡ chữ", 12, 16, 14)
-    page_pos = st.selectbox("Vị trí số trang", ["TOP_CENTER", "BOTTOM_CENTER", "BOTTOM_RIGHT"], index=2) # Mặc định RIGHT
+    line_sp, font_sz = st.number_input("Cách dòng", 1.0, 2.5, cp["sp"]), st.number_input("Cỡ chữ", 12, 16, 14)
+    page_pos = st.selectbox("Vị trí số trang", ["TOP_CENTER", "BOTTOM_CENTER", "BOTTOM_RIGHT"], index=2)
 
 # ===== 5. VÙNG NHẬP LIỆU CHÍNH =====
 col_in1, col_in2 = st.columns([1, 2])
 with col_in1:
-    st.subheader("👤 Thông tin bìa")
+    st.subheader("👤 Thông tin học viên")
     ten_hoc_vien = st.text_input("Họ và tên", "Đặng Nhật Minh")
-    so_bao_danh = st.text_input("Số báo danh", "39") # Mặc định là 39
+    so_bao_danh = st.text_input("Số báo danh", "39")
     ten_mon_bia = st.text_input("Chuyên đề (Bìa)", hoc_phan_ui)
     ten_chu_de_bia = st.text_input("Tên đề tài (Bìa)", "PHÂN TÍCH CÁC CHỨC NĂNG XÃ HỘI CỦA GIÁO DỤC")
 
@@ -102,7 +99,7 @@ with col_in2:
     st.subheader("🤖 Yêu cầu AI")
     chi_tiet_ai = st.text_area("Đề bài gốc", "Bằng lý luận và thực tiễn, hãy phân tích các chức năng xã hội của giáo dục...", height=265)
 
-# ===== 6. LOGIC XỬ LÝ =====
+# ===== 6. LOGIC XỬ LÝ AI =====
 def call_ai(key, provider, prompt, model_name):
     try:
         api_key = key or st.secrets.get(f"{provider.upper()}_API_KEY")
@@ -118,21 +115,24 @@ def call_ai(key, provider, prompt, model_name):
             time.sleep(2); return res.choices[0].message.content
     except Exception as e: return f"ERROR: {e}"
 
-if st.button("🚀 BẮT ĐẦU TẠO BÀI TẬP LỚN (12-14 TRANG)"):
+if st.button("🚀 BẮT ĐẦU TẠO BÀI TẬP LỚN"):
+    api_key = input_key or st.secrets.get(f"{provider.upper()}_API_KEY")
+    if not api_key: st.error("❌ Không tìm thấy API Key!"); st.stop()
+
     status = st.empty(); prog = st.progress(0)
     
-    # Bước 1: Lập dàn ý khống chế mục
+    # Bước 1: Lập dàn ý khống chế mục (6 mục chính)
     status.info("📝 Bước 1: Lập dàn ý mục tiêu...")
-    outline_prompt = f"Lập dàn ý bài tập lớn đại học cho chủ đề: {chi_tiet_ai}. Yêu cầu: 6-7 mục chính (Mở đầu, 4 phần nội dung, Kết luận). Trả về danh sách mục."
-    outline = call_ai(input_key, provider, outline_prompt, model_choice)
-    sections = [s for s in outline.split('\n') if len(s.strip()) > 5]
+    outline_prompt = f"Lập dàn ý bài tập lớn đại học cho chủ đề: {chi_tiet_ai}. Yêu cầu: đúng 6 mục chính (Mở đầu, 4 phần nội dung, Kết luận). Trả về danh sách mục."
+    outline = call_ai(api_key, provider, outline_prompt, model_choice)
+    sections = [s for s in outline.split('\n') if len(s.strip()) > 5][:6]
     
-    # Bước 2: Viết nội dung (700 từ/mục)
+    # Bước 2: Viết nội dung (Giảm xuống 600 từ/mục để khống chế ~12 trang)
     full_content_list = []
     for i, sec in enumerate(sections):
-        status.write(f"⏳ Đang viết: {sec}")
-        part_prompt = f"Viết bài luận học thuật sâu sắc cho mục '{sec}' của đề tài '{chi_tiet_ai}'. Yêu cầu độ dài khoảng 700 từ. Tuyệt đối không markdown."
-        part = call_ai(input_key, provider, part_prompt, model_choice)
+        status.write(f"⏳ Đang viết mục {i+1}/{len(sections)}: {sec}")
+        part_prompt = f"Viết bài luận học thuật sâu sắc cho mục '{sec}' của đề tài '{chi_tiet_ai}'. Yêu cầu độ dài khoảng 600 từ. Tuyệt đối không markdown."
+        part = call_ai(api_key, provider, part_prompt, model_choice)
         full_content_list.append((sec, part))
         prog.progress(15 + int((i+1)/len(sections)*75))
 
@@ -182,5 +182,5 @@ if st.button("🚀 BẮT ĐẦU TẠO BÀI TẬP LỚN (12-14 TRANG)"):
 
     buffer = io.BytesIO()
     doc.save(buffer); buffer.seek(0)
-    prog.progress(100); status.success("🎉 Xong! Bài viết đạt khoảng 12-14 trang.")
+    prog.progress(100); status.success("🎉 Xong! Bài viết đạt khoảng 12 trang.")
     st.download_button("📥 Tải BTL Hoàn Thiện", buffer, file_name=f"BTL_{ten_hoc_vien}.docx")
