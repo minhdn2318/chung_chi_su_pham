@@ -9,11 +9,11 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
-# ===== KHỞI TẠO =====
+# ===== KHỞI TẠO HỆ THỐNG =====
 load_dotenv()
 
 def add_page_number(paragraph, position):
-    """Chèn số trang vào vị trí mong muốn theo quy định của từng học phần"""
+    """Chèn số trang tự động vào Header/Footer"""
     if "CENTER" in position:
         paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     elif "RIGHT" in position:
@@ -33,10 +33,11 @@ def add_page_number(paragraph, position):
     run._r.append(fldChar2)
 
 def replace_info(doc, placeholders):
-    """Thay thế thông tin trên trang bìa của Template"""
+    """Thay thế thông tin học viên trên trang bìa của Template"""
     for p in doc.paragraphs:
         for key, value in placeholders.items():
             if key in p.text:
+                # Giữ nguyên định dạng của paragraph cũ, chỉ thay chữ
                 p.text = p.text.replace(key, value)
 
 # ===== GIAO DIỆN STREAMLIT =====
@@ -48,8 +49,8 @@ with st.sidebar:
     st.header("⚙️ Cấu hình Mô hình")
     provider = st.selectbox("AI Provider", ["Gemini", "Groq"])
     
-    # Cập nhật các Model mới nhất theo thông tin bạn cung cấp
     if provider == "Gemini":
+        # Sử dụng các model ID mới nhất bạn vừa cập nhật
         model_choice = st.selectbox("Chọn Model", ["gemini-2.5-pro", "gemini-2.5-flash"])
     else:
         model_choice = st.text_input("Groq Model ID", "GPT OSS 20B 128k")
@@ -66,7 +67,7 @@ with st.sidebar:
         "Tùy chỉnh khác"
     ])
 
-    # Thiết lập giá trị mặc định theo yêu cầu của bạn
+    # Thiết lập giá trị mặc định dựa trên quy định HPU2
     def_margins = {"top": 2.5, "bottom": 3.0, "left": 3.0, "right": 2.0}
     def_spacing = 1.5
     def_page_pos = "TOP_CENTER"
@@ -77,10 +78,10 @@ with st.sidebar:
         def_margins = {"top": 2.0, "bottom": 2.0, "left": 2.0, "right": 2.0}
         def_spacing = 1.3
         def_page_pos = "BOTTOM_RIGHT"
-    elif "Khác" in hoc_phan_selection or "Tùy chỉnh" in hoc_phan_selection:
+    elif "Khác" in hoc_phan_selection:
         def_page_pos = "BOTTOM_RIGHT"
 
-    # Cho phép người dùng SỬA LẠI cấu hình trực tiếp trên Sidebar
+    # Cho phép chỉnh sửa lề trực tiếp tại Sidebar
     col_l, col_r = st.columns(2)
     with col_l:
         m_top = st.number_input("Lề trên (cm)", 0.0, 5.0, def_margins["top"])
@@ -89,8 +90,8 @@ with st.sidebar:
         m_bottom = st.number_input("Lề dưới (cm)", 0.0, 5.0, def_margins["bottom"])
         m_right = st.number_input("Lề phải (cm)", 0.0, 5.0, def_margins["right"])
 
-    line_sp = st.number_input("Cách dòng", 1.0, 3.0, def_spacing)
-    font_sz = st.number_input("Cỡ chữ", 10, 16, 14)
+    line_sp = st.number_input("Cách dòng", 1.0, 2.5, def_spacing)
+    font_sz = st.number_input("Cỡ chữ", 12, 16, 14)
     page_pos = st.selectbox("Vị trí số trang", 
                             ["TOP_CENTER", "BOTTOM_CENTER", "BOTTOM_RIGHT"], 
                             index=["TOP_CENTER", "BOTTOM_CENTER", "BOTTOM_RIGHT"].index(def_page_pos))
@@ -100,7 +101,7 @@ col_in1, col_in2 = st.columns([1, 2])
 with col_in1:
     ten_hoc_vien = st.text_input("Học viên", "Đặng Nhật Minh")
     ten_mon = st.text_input("Tên môn hiển thị", hoc_phan_selection)
-with col_input2:
+with col_in2: # <--- ĐÃ FIX LỖI TẠI ĐÂY
     default_de_bai = "Bằng lý luận và thực tiễn, anh (chị) hãy phân tích các chức năng xã hội của giáo dục. Từ đó, anh (chị) hãy liên hệ với việc thực hiện các chức năng này ở Việt Nam."
     de_bai = st.text_area("Đề tài chi tiết", default_de_bai, height=120)
 
@@ -110,7 +111,6 @@ def call_ai(api_key, provider, prompt, model_name):
         if provider == "Gemini":
             import google.generativeai as genai
             genai.configure(api_key=api_key)
-            # Sử dụng model ID mới nhất từ danh sách bạn cung cấp
             model = genai.GenerativeModel(model_name)
             response = model.generate_content(prompt)
             return response.text
@@ -119,13 +119,14 @@ def call_ai(api_key, provider, prompt, model_name):
             client = Groq(api_key=api_key)
             response = client.chat.completions.create(
                 model=model_name,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=4000
             )
             return response.choices[0].message.content
     except Exception as e:
         return f"ERROR: {str(e)}"
 
-# ===== THỰC THI =====
+# ===== THỰC THI CHÍNH =====
 if st.button("🚀 Bắt đầu tạo bài tập lớn"):
     api_key = api_key_input or os.getenv("GEMINI_API_KEY") or os.getenv("GROQ_API_KEY")
     if not api_key:
@@ -136,44 +137,48 @@ if st.button("🚀 Bắt đầu tạo bài tập lớn"):
     progress = st.progress(0)
     
     # 1. Lập dàn ý
-    status.info("📝 Bước 1: Đang lập dàn ý chi tiết...")
-    outline = call_ai(api_key, provider, f"Lập dàn ý chi tiết bài tập lớn đại học 12 trang: {de_bai}. Chỉ trả về các đầu mục.", model_choice)
+    status.info("📝 Bước 1: Đang lập dàn ý chi tiết (Gemini 2.5 Thinking)...")
+    outline_prompt = f"Lập dàn ý báo cáo học thuật 12 trang cho đề tài: {de_bai}. Yêu cầu chia thành các mục 1, 2, 3... rõ ràng. Chỉ trả về các tiêu đề mục."
+    outline = call_ai(api_key, provider, outline_prompt, model_choice)
     sections = [s for s in outline.split('\n') if len(s.strip()) > 5]
     progress.progress(20)
 
-    # 2. Viết từng mục (Vòng lặp để đảm bảo độ dài 12 trang)
+    # 2. Viết nội dung từng mục
     full_report = ""
     for idx, section in enumerate(sections):
-        status.write(f"⏳ Đang viết chương: {section}")
-        chapter = call_ai(api_key, provider, f"Viết nội dung học thuật sâu sắc (800-1000 từ) cho mục '{section}' của đề tài '{de_bai}'. Không dùng markdown.", model_choice)
+        status.write(f"⏳ Đang viết mục: {section}")
+        chapter_prompt = f"Hãy đóng vai chuyên gia giáo dục, viết nội dung sâu sắc (khoảng 800-1000 từ) cho phần '{section}' của đề tài '{de_bai}'. Phong cách học thuật, không markdown."
+        chapter = call_ai(api_key, provider, chapter_prompt, model_choice)
         full_report += f"\n\n{section}\n\n{chapter}"
         progress.progress(20 + int((idx+1)/len(sections)*60))
 
-    # 3. Xuất file Word
-    status.info("📄 Bước 3: Đang áp dụng quy cách trình bày...")
+    # 3. Tạo file Word
+    status.info("📄 Bước 3: Đang áp dụng quy cách trình bày & Template...")
     template_path = "De Thi/template.docx"
     
-    doc = Document(template_path) if os.path.exists(template_path) else Document()
-    
-    # Thay thế thông tin trên bìa
-    replace_info(doc, {"Đặng Nhật Minh": ten_hoc_vien, "TÊN CHỦ ĐỀ": de_bai.upper()})
-
-    # Cấu hình lề từ Sidebar
-    section_word = doc.sections[0]
-    section_word.top_margin = Cm(m_top)
-    section_word.bottom_margin = Cm(m_bottom)
-    section_word.left_margin = Cm(m_left)
-    section_word.right_margin = Cm(m_right)
-
-    # Đánh số trang theo cấu hình Sidebar
-    if page_pos == "TOP_CENTER":
-        add_page_number(section_word.header.paragraphs[0], "TOP_CENTER")
+    if os.path.exists(template_path):
+        doc = Document(template_path)
+        # Thay thế placeholder trên bìa
+        replace_info(doc, {"Đặng Nhật Minh": ten_hoc_vien, "TÊN CHỦ ĐỀ": de_bai.upper()})
     else:
-        # Đảm bảo footer có ít nhất 1 paragraph
-        footer_para = section_word.footer.paragraphs[0] if section_word.footer.paragraphs else section_word.footer.add_paragraph()
-        add_page_number(footer_para, page_pos)
+        doc = Document()
+        st.warning("⚠️ Không tìm thấy Template.docx, hệ thống sẽ tạo file mới.")
 
-    # Thêm văn bản và định dạng
+    # Cấu hình lề
+    sec = doc.sections[0]
+    sec.top_margin = Cm(m_top)
+    sec.bottom_margin = Cm(m_bottom)
+    sec.left_margin = Cm(m_left)
+    sec.right_margin = Cm(m_right)
+
+    # Đánh số trang
+    if page_pos == "TOP_CENTER":
+        add_page_number(sec.header.paragraphs[0], "TOP_CENTER")
+    else:
+        footer_p = sec.footer.paragraphs[0] if sec.footer.paragraphs else sec.footer.add_paragraph()
+        add_page_number(footer_p, page_pos)
+
+    # Format nội dung
     for line in full_report.split('\n'):
         if line.strip():
             p = doc.add_paragraph(line)
@@ -182,15 +187,16 @@ if st.button("🚀 Bắt đầu tạo bài tập lớn"):
             run = p.runs[0] if p.runs else p.add_run(line)
             run.font.name = "Times New Roman"
             run.font.size = Pt(font_sz)
+            # Fix font tiếng Việt tuyệt đối
             run._element.rPr.rFonts.set(qn('w:eastAsia'), "Times New Roman")
 
-    # Lưu và Tải về
+    # Hoàn tất
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
     
     progress.progress(100)
-    status.success(f"✅ Hoàn thành! Model: {model_choice} | Lề: {m_left}-{m_right}cm")
+    status.success(f"✅ Hoàn thành! Lề: {m_left}-{m_right}cm. Vị trí trang: {page_pos}")
 
     st.download_button(
         "📥 Tải Bài Tập Lớn Hoàn Thiện",
