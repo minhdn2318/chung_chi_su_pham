@@ -3,14 +3,17 @@ import os
 import io
 import re
 import unicodedata
-import time
 from docx import Document
 from docx.shared import Pt, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
-# ===== 1. DATABASE 9 HỌC PHẦN (CẬP NHẬT TỪ EXCEL DETHI.XLSX) =====
+# ===== 0. XỬ LÝ ĐƯỜNG DẪN (CHỐNG LỖI FILE NOT FOUND) =====
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_BIA_PATH = os.path.join(CURRENT_DIR, "Bia.docx")
+
+# ===== 1. DATABASE 9 HỌC PHẦN (CHUẨN EXCEL) =====
 DATA_BTL = {
     "HP_01: Giáo dục học đại cương": {
         "de_tai": "PHÂN TÍCH CÁC CHỨC NĂNG XÃ HỘI CỦA GIÁO DỤC VÀ LIÊN HỆ THỰC TIỄN",
@@ -39,7 +42,7 @@ DATA_BTL = {
     },
     "HP_06: Quản lý nhà nước về giáo dục và đào tạo": {
         "de_tai": "PHÂN TÍCH CÁC NGUYÊN TẮC QUẢN LÝ NHÀ NƯỚC VỀ GIÁO DỤC",
-        "cau_hoi": "Trình bày các nguyên tắc và nội dung quản lý nhà nước về giáo dục và đào tạo. Liên hệ thực tiễn công tác quản lý tại một cơ sở giáo dục cụ thể và đề xuất giải pháp hoàn thiện.",
+        "cau_hoi": "Trình bày các nguyên tắc và nội dung quản lý nhà nước về giáo dục và đào tạo. Liên hệ thực hiện tại một cơ sở giáo dục cụ thể và đề xuất giải pháp hoàn thiện.",
         "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.5, "font_sz": 14
     },
     "HP_07: Phát triển chương trình đào tạo đại học": {
@@ -84,23 +87,23 @@ def set_font_style(run, font_name="Times New Roman", size=14, bold=False):
     rPr.insert(0, rFonts)
 
 def strictly_clean_content(text):
-    ai_patterns = [r"Dưới đây là.*:", r"Đoạn văn đã được chỉnh sửa.*:", r"Chắc chắn rồi.*:", r"Sau đây là.*:"]
+    ai_patterns = [r"Dưới đây là.*:", r"Đoạn văn đã được chỉnh sửa.*:", r"Chắc chắn rồi.*:"]
     for pattern in ai_patterns:
         text = re.sub(pattern, "", text, flags=re.IGNORECASE | re.DOTALL)
     return re.sub(r'[*#_~-]', '', text).strip()
 
 # ===== 3. GIAO DIỆN STREAMLIT =====
-st.set_page_config(page_title="AI Report Ultimate", layout="wide")
+st.set_page_config(page_title="AI Report Generator Pro", layout="wide")
 
 with st.sidebar:
-    st.header("⚙️ Cấu hình Model")
+    st.header("⚙️ Cấu hình AI")
     provider = st.selectbox("Provider", ["Groq", "Gemini"])
-    model_choice = st.selectbox("Model", ["llama-3.3-70b-versatile", "gemini-1.5-pro"] if provider == "Groq" else ["gemini-1.5-pro", "gemini-2.0-flash"])
+    model_choice = st.selectbox("Model", ["llama-3.3-70b-versatile", "qwen-2.5-32b"] if provider == "Groq" else ["gemini-1.5-pro", "gemini-2.0-flash"])
     api_key_input = st.text_input("API Key", type="password")
 
     st.divider()
-    st.header("📏 Lề & Font (Tùy chỉnh)")
-    selected_hp = st.selectbox("Chọn Preset Học Phần", list(DATA_BTL.keys()))
+    st.header("📏 Thông số Trang (Có thể chỉnh)")
+    selected_hp = st.selectbox("Chọn Mã Học Phần", list(DATA_BTL.keys()))
     preset = DATA_BTL[selected_hp]
     
     c1, c2 = st.columns(2)
@@ -115,8 +118,17 @@ with st.sidebar:
     f_sp = st.number_input("Dãn dòng", 1.0, 2.5, preset["spacing"])
     
     st.header("🔢 Đánh số trang")
-    pg_side = st.selectbox("Vị trí dọc", ["BOTTOM", "TOP"])
-    pg_align = st.selectbox("Vị trí ngang", ["RIGHT", "LEFT", "CENTER" ], index=0)
+    pg_align = st.selectbox("Vị trí ngang", ["LEFT", "CENTER", "RIGHT"], index=0)
+
+    # --- KHU VỰC FIX LỖI FILE BÌA ---
+    st.divider()
+    st.header("📁 Quản lý File Bìa")
+    if not os.path.exists(DEFAULT_BIA_PATH):
+        st.error("⚠️ Không tìm thấy file Bia.docx tự động.")
+        uploaded_bia = st.file_uploader("Vui lòng tải file Bia.docx lên đây để dùng:", type=["docx"])
+    else:
+        st.success("✅ Đã tìm thấy Bia.docx trong thư mục.")
+        uploaded_bia = None
 
 st.title("🎓 Hệ thống Tạo Tiểu luận Ultimate (VNU-HPU2 Edition)")
 
@@ -130,9 +142,9 @@ with col_in1:
 
 with col_in2:
     st.subheader("🤖 Yêu cầu nội dung")
-    yeu_cau = st.text_area("Câu hỏi chi tiết (AI sẽ phân tích)", preset["cau_hoi"], height=220)
+    yeu_cau = st.text_area("Câu hỏi chi tiết", preset["cau_hoi"], height=220)
 
-# ===== 4. LOGIC XỬ LÝ =====
+# ===== 4. LOGIC AI & XUẤT FILE =====
 def call_ai(key, provider, prompt, model):
     sys = "Bạn là Tiến sĩ Giáo dục. CHỈ xuất nội dung tiểu luận. KHÔNG dẫn dắt, KHÔNG Markdown."
     try:
@@ -147,28 +159,34 @@ def call_ai(key, provider, prompt, model):
             return res.choices[0].message.content
     except Exception as e: return f"Lỗi: {e}"
 
-if st.button("🚀 XUẤT TIỂU LUẬN FULL OPTION"):
+if st.button("🚀 XUẤT TIỂU LUẬN HOÀN THIỆN"):
     key = api_key_input or st.secrets.get(f"{provider.upper()}_API_KEY")
     if not key: st.error("Thiếu Key!"); st.stop()
-    if not os.path.exists("Bia.docx"): st.error("Lỗi: Không tìm thấy file 'Bia.docx'!"); st.stop()
+    
+    # Xác định nguồn file bìa (Ưu tiên file upload, sau đó tới file cục bộ)
+    if uploaded_bia is not None:
+        doc = Document(uploaded_bia)
+    elif os.path.exists(DEFAULT_BIA_PATH):
+        doc = Document(DEFAULT_BIA_PATH)
+    else:
+        st.error("❌ Không có file Bia.docx để thực hiện! Hãy kiểm tra folder hoặc tải lên ở Sidebar.")
+        st.stop()
 
     status = st.empty(); prog = st.progress(0)
     
-    # 1. AI viết nội dung (2 lớp: Draft & Review)
+    # 1. AI viết bài
     outline = call_ai(key, provider, f"Lập dàn ý 6 mục lớn cho tiểu luận: {de_tai}", model_choice)
     sections = [s.strip() for s in outline.split('\n') if len(s.strip()) > 10][:6]
 
     final_content = []
     for i, sec in enumerate(sections):
-        status.info(f"✍️ Đang biên tập Chương {i+1}: {sec}")
-        draft = call_ai(key, provider, f"Viết 1000 từ học thuật cho mục '{sec}' của đề tài '{de_tai}'. Bám sát câu hỏi: {yeu_cau}", model_choice)
-        # Lớp Review để Humanize
-        polished = call_ai(key, provider, f"Biên tập lại đoạn văn sau: Loại bỏ dấu vết AI, sửa câu văn tự nhiên, học thuật. CẤM dẫn dắt: {draft}", model_choice)
+        status.info(f"✍️ Đang soạn Chương {i+1}: {sec}")
+        draft = call_ai(key, provider, f"Viết 1000 từ cho mục '{sec}' của đề tài '{de_tai}'. Bám sát câu hỏi: {yeu_cau}", model_choice)
+        polished = call_ai(key, provider, f"Biên tập lại: Xóa dấu AI, sửa câu tự nhiên. CẤM dẫn dắt: {draft}", model_choice)
         final_content.append((sec, strictly_clean_content(polished)))
         prog.progress(int((i+1)/len(sections)*100))
 
-    # 2. Tổng hợp Word
-    doc = Document("Bia.docx")
+    # 2. Xử lý Word
     for p in doc.paragraphs:
         maps = {"{{HO_TEN}}": ten_hv, "{{SBD}}": sbd, "{{MON_HOC}}": mon_hoc.upper(), "{{TEN_DE_TAI}}": de_tai.upper()}
         for k, v in maps.items():
@@ -176,26 +194,22 @@ if st.button("🚀 XUẤT TIỂU LUẬN FULL OPTION"):
                 for run in p.runs:
                     if k in run.text: run.text = run.text.replace(k, str(v)); set_font_style(run)
 
-    # Mục lục
+    # 3. Mục lục & Định dạng lề
     doc.add_page_break()
     p_toc = doc.add_paragraph(); p_toc.alignment = WD_ALIGN_PARAGRAPH.CENTER
     set_font_style(p_toc.add_run("MỤC LỤC"), size=16, bold=True)
     run_toc = doc.add_paragraph().add_run()
     fld1 = OxmlElement('w:fldChar'); fld1.set(qn('w:fldCharType'), 'begin'); run_toc._r.append(fld1)
     instr = OxmlElement('w:instrText'); instr.set(qn('xml:space'), 'preserve'); instr.text = 'TOC \\o "1-3" \\h \\z \\u'
-    run_toc._r.append(instr)
-    fld2 = OxmlElement('w:fldChar'); fld2.set(qn('w:fldCharType'), 'separate'); run_toc._r.append(fld2)
-    fld3 = OxmlElement('w:fldChar'); fld3.set(qn('w:fldCharType'), 'end'); run_toc._r.append(fld3)
+    run_toc._r.append(instr); fld2 = OxmlElement('w:fldChar'); fld2.set(qn('w:fldCharType'), 'separate'); run_toc._r.append(fld2); fld3 = OxmlElement('w:fldChar'); fld3.set(qn('w:fldCharType'), 'end'); run_toc._r.append(fld3)
 
-    # Nội dung & Định dạng
     doc.add_page_break()
     sec_word = doc.sections[-1]
     sec_word.top_margin, sec_word.bottom_margin = Cm(m_top), Cm(m_bottom)
     sec_word.left_margin, sec_word.right_margin = Cm(m_left), Cm(m_right)
     
     doc.sections[0].different_first_page_header_footer = True
-    target_para = sec_word.header.paragraphs[0] if pg_side == "TOP" else sec_word.footer.paragraphs[0]
-    add_page_number(target_para, pg_align)
+    add_page_number(sec_word.footer.paragraphs[0], pg_align)
 
     for idx, (title, text) in enumerate(final_content):
         h = doc.add_paragraph(style='Heading 1')
@@ -211,5 +225,5 @@ if st.button("🚀 XUẤT TIỂU LUẬN FULL OPTION"):
 
     file_final = f"BTL_{selected_hp.split(':')[0]}_{remove_vietnamese_accent(ten_hv)}.docx"
     buf = io.BytesIO(); doc.save(buf); buf.seek(0)
-    status.success(f"🎉 Đã hoàn thành tiểu luận {selected_hp}!")
+    status.success(f"✅ Đã tạo xong bài làm!")
     st.download_button(label=f"📥 Tải xuống bài làm", data=buf, file_name=file_final)
