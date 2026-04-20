@@ -9,168 +9,154 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
-# ===== 1. DATABASE 9 HỌC PHẦN (NHẬT MINH DÁN NỘI DUNG EXCEL VÀO ĐÂY) =====
+# ===== 1. DATABASE 9 HỌC PHẦN (CẤU HÌNH ĐỘNG TOÀN DIỆN) =====
+# Cấu hình "le": (Trên, Dưới, Trái, Phải)
 DATA_BTL = {
     "HP_01: Giáo dục học đại cương": {
-        "de_tai": "TÊN ĐỀ TÀI TỪ EXCEL CỦA BẠN", 
-        "cau_hoi": "NỘI DUNG CÂU HỎI CHI TIẾT TỪ EXCEL CỦA BẠN",
-        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.5, "font_sz": 14
+        "de_tai": "PHÂN TÍCH CÁC CHỨC NĂNG XÃ HỘI CỦA GIÁO DỤC", 
+        "cau_hoi": "Phân tích các chức năng xã hội của giáo dục. Liên hệ thực hiện tại Việt Nam hiện nay.",
+        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.5, "font_sz": 14, "page_pos": "LEFT"
     },
     "HP_02: Lý luận dạy học đại học": {
-        "de_tai": "TÊN ĐỀ TÀI TỪ EXCEL CỦA BẠN",
-        "cau_hoi": "NỘI DUNG CÂU HỎI CHI TIẾT TỪ EXCEL CỦA BẠN",
-        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.3, "font_sz": 14
+        "de_tai": "VẬN DỤNG NGUYÊN TẮC DẠY HỌC HIỆN ĐẠI",
+        "cau_hoi": "Phân tích hệ thống nguyên tắc dạy học đại học và đề xuất phương án vận dụng.",
+        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.3, "font_sz": 14, "page_pos": "LEFT"
     },
     "HP_03: Sử dụng phương tiện kỹ thuật KH": {
-        "de_tai": "TÊN ĐỀ TÀI TỪ EXCEL CỦA BẠN",
-        "cau_hoi": "NỘI DUNG CÂU HỎI CHI TIẾT TỪ EXCEL CỦA BẠN",
-        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.5, "font_sz": 14
+        "de_tai": "CÔNG NGHỆ TRONG ĐỔI MỚI DẠY HỌC",
+        "cau_hoi": "Trình bày phương tiện hiện đại và thực trạng ứng dụng tại cơ sở.",
+        "le": (2.5, 2.0, 3.5, 2.0), "spacing": 1.5, "font_sz": 14, "page_pos": "LEFT"
     },
     "HP_04: Tâm lý học đại cương": {
-        "de_tai": "TÊN ĐỀ TÀI TỪ EXCEL CỦA BẠN",
-        "cau_hoi": "NỘI DUNG CÂU HỎI CHI TIẾT TỪ EXCEL CỦA BẠN",
-        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.5, "font_sz": 14
+        "de_tai": "YẾU TỐ HÌNH THÀNH NHÂN CÁCH",
+        "cau_hoi": "Phân tích cấu trúc nhân cách và các yếu tố ảnh hưởng đến sự hình thành nhân cách.",
+        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.5, "font_sz": 14, "page_pos": "LEFT"
     },
     "HP_05: Quản lý nhà nước về Giáo dục": {
-        "de_tai": "TÊN ĐỀ TÀI TỪ EXCEL CỦA BẠN",
-        "cau_hoi": "NỘI DUNG CÂU HỎI CHI TIẾT TỪ EXCEL CỦA BẠN",
-        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.5, "font_sz": 14
+        "de_tai": "QUẢN LÝ GIÁO DỤC KỶ NGUYÊN SỐ",
+        "cau_hoi": "Các chức năng quản lý nhà nước và giải pháp nâng cao hiệu quả quản lý giáo dục.",
+        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.5, "font_sz": 14, "page_pos": "LEFT"
     },
     "HP_06: Phát triển chương trình đào tạo": {
-        "de_tai": "TÊN ĐỀ TÀI TỪ EXCEL CỦA BẠN",
-        "cau_hoi": "NỘI DUNG CÂU HỎI CHI TIẾT TỪ EXCEL CỦA BẠN",
-        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.5, "font_sz": 14
+        "de_tai": "THIẾT KẾ ĐỀ CƯƠNG CHUẨN ĐẦU RA",
+        "cau_hoi": "Quy trình phát triển chương trình và xây dựng ma trận mục tiêu cho học phần.",
+        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.5, "font_sz": 14, "page_pos": "LEFT"
     },
     "HP_07: Đánh giá trong giáo dục": {
-        "de_tai": "TÊN ĐỀ TÀI TỪ EXCEL CỦA BẠN",
-        "cau_hoi": "NỘI DUNG CÂU HỎI CHI TIẾT TỪ EXCEL CỦA BẠN",
-        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.5, "font_sz": 14
+        "de_tai": "ĐỔI MỚI KIỂM TRA ĐÁNH GIÁ NĂNG LỰC",
+        "cau_hoi": "Các hình thức đánh giá và thiết kế bộ công cụ đánh giá theo định hướng năng lực.",
+        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.5, "font_sz": 14, "page_pos": "LEFT"
     },
     "HP_08: Phương pháp nghiên cứu khoa học": {
-        "de_tai": "TÊN ĐỀ TÀI TỪ EXCEL CỦA BẠN",
-        "cau_hoi": "NỘI DUNG CÂU HỎI CHI TIẾT TỪ EXCEL CỦA BẠN",
-        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.5, "font_sz": 14
+        "de_tai": "XÂY DỰNG ĐỀ CƯƠNG NGHIÊN CỨU GIÁO DỤC",
+        "cau_hoi": "Quy trình nghiên cứu khoa học và lập kế hoạch nghiên cứu cho đề tài cụ thể.",
+        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.5, "font_sz": 14, "page_pos": "LEFT"
     },
     "HP_09: Kỹ năng mềm trong dạy học": {
-        "de_tai": "TÊN ĐỀ TÀI TỪ EXCEL CỦA BẠN",
-        "cau_hoi": "NỘI DUNG CÂU HỎI CHI TIẾT TỪ EXCEL CỦA BẠN",
-        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.5, "font_sz": 14
+        "de_tai": "RÈN LUYỆN KỸ NĂNG GIAO TIẾP SƯ PHẠM",
+        "cau_hoi": "Tầm quan trọng kỹ năng mềm và các tình huống xử lý sư phạm điển hình.",
+        "le": (2.0, 2.0, 3.0, 2.0), "spacing": 1.5, "font_sz": 14, "page_pos": "LEFT"
     }
 }
 
-# ===== 2. TIỆN ÍCH ĐỊNH DẠNG & LÀM SẠCH =====
+# ===== 2. TIỆN ÍCH ĐỊNH DẠNG =====
 def remove_vietnamese_accent(s):
     s = s.replace("Đ", "D").replace("đ", "d")
     s = unicodedata.normalize('NFKD', s).encode('ascii', 'ignore').decode('ascii')
     return re.sub(r'[^a-zA-Z0-9_]', '_', s)
 
-def add_toc(paragraph):
+def add_page_number(paragraph, alignment_code):
+    """Đánh số trang động: LEFT, CENTER, RIGHT"""
+    if alignment_code == "LEFT":
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    elif alignment_code == "RIGHT":
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    else:
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
     run = paragraph.add_run()
-    fldChar = OxmlElement('w:fldChar'); fldChar.set(qn('w:fldCharType'), 'begin'); run._r.append(fldChar)
-    instrText = OxmlElement('w:instrText'); instrText.set(qn('xml:space'), 'preserve'); instrText.text = 'TOC \\o "1-3" \\h \\z \\u'
-    run._r.append(instrText)
-    fldChar2 = OxmlElement('w:fldChar'); fldChar2.set(qn('w:fldCharType'), 'separate'); run._r.append(fldChar2)
-    fldChar3 = OxmlElement('w:fldChar'); fldChar3.set(qn('w:fldCharType'), 'end'); run._r.append(fldChar3)
+    fldChar1 = OxmlElement('w:fldChar'); fldChar1.set(qn('w:fldCharType'), 'begin'); run._r.append(fldChar1)
+    instrText = OxmlElement('w:instrText'); instrText.text = "PAGE"; run._r.append(instrText)
+    fldChar2 = OxmlElement('w:fldChar'); fldChar2.set(qn('w:fldCharType'), 'end'); run._r.append(fldChar2)
 
 def set_font_style(run, size=14, bold=False):
     run.font.name = "Times New Roman"
     run.font.size = Pt(size)
     run.bold = bold
-    r = run._element.get_or_add_rPr()
+    rPr = run._element.get_or_add_rPr()
     rFonts = OxmlElement('w:rFonts')
     rFonts.set(qn('w:ascii'), "Times New Roman")
     rFonts.set(qn('w:hAnsi'), "Times New Roman")
     rFonts.set(qn('w:eastAsia'), "Times New Roman")
-    r.insert(0, rFonts)
+    rPr.insert(0, rFonts)
 
 def strictly_clean_content(text):
-    """Xóa bỏ các ký tự Markdown và lời dẫn AI"""
     ai_patterns = [r"Dưới đây là.*:", r"Đoạn văn đã được chỉnh sửa.*:", r"Tôi đã thực hiện.*:", r"Nội dung biên tập.*:"]
     for pattern in ai_patterns:
         text = re.sub(pattern, "", text, flags=re.IGNORECASE | re.DOTALL)
-    text = re.sub(r'[*#_~-]', '', text)
-    return text.strip()
+    return re.sub(r'[*#_~-]', '', text).strip()
 
-# ===== 3. LOGIC AI (VĂN PHONG TIỂU LUẬN CAO CẤP) =====
+# ===== 3. GIAO DIỆN VÀ LOGIC AI =====
+st.set_page_config(page_title="Hệ thống BTL Pro", layout="wide")
+
+with st.sidebar:
+    st.header("⚙️ Cấu hình Hệ thống")
+    provider = st.selectbox("AI Model", ["Groq", "Gemini"])
+    user_key = st.text_input("API Key (Tùy chọn)", type="password")
+    
+    st.divider()
+    selected_key = st.selectbox("Chọn Mã Học Phần", list(DATA_BTL.keys()))
+    conf = DATA_BTL[selected_key]
+    
+    st.subheader("📏 Thông số mặc định (tự động)")
+    st.info(f"Lề: {conf['le']} | Dãn dòng: {conf['spacing']} | Font: {conf['font_sz']}")
+    btl_code = selected_key.split(":")[0]
+
+st.title("🎓 Công cụ Tạo BTL chuẩn VNU (Dynamic Config)")
+
+col1, col2 = st.columns([1, 2])
+with col1:
+    ten_hv = st.text_input("Học viên", "Đặng Nhật Minh")
+    sbd = st.text_input("SBD", "39")
+    mon_hoc = st.text_input("Môn", selected_key.split(": ")[1])
+    de_tai = st.text_area("Tên đề tài", conf["de_tai"], height=100)
+
+with col2:
+    yeu_cau = st.text_area("Nội dung câu hỏi Excel", conf["cau_hoi"], height=215)
+
 def call_ai(key, provider, prompt):
-    sys_instruction = (
-        "Bạn là một Tiến sĩ Giáo dục học dày dặn kinh nghiệm. "
-        "NHIỆM VỤ: Viết nội dung tiểu luận học thuật chuyên sâu. "
-        "VĂN PHONG: Trang trọng, logic, sử dụng các từ ngữ học thuật chuyên ngành. "
-        "CẤM: Không dùng Markdown (*, #), không chào hỏi, không dẫn dắt. "
-        "YÊU CẦU: Nội dung phải mang tính lý luận kết hợp thực tiễn sâu sắc."
-    )
+    sys = "Bạn là máy soạn thảo tiểu luận VNU. CHỈ xuất nội dung học thuật. KHÔNG dẫn dắt, KHÔNG Markdown."
     try:
         if provider == "Gemini":
             import google.generativeai as genai
             genai.configure(api_key=key)
-            model = genai.GenerativeModel('gemini-1.5-pro')
-            return model.generate_content(f"{sys_instruction}\n\n{prompt}").text
+            return genai.GenerativeModel('gemini-1.5-pro').generate_content(f"{sys}\n\n{prompt}").text
         else:
             from groq import Groq
             client = Groq(api_key=key)
-            res = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=[{"role": "system", "content": sys_instruction}, {"role": "user", "content": prompt}]
-            )
+            res = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=[{"role": "system", "content": sys}, {"role": "user", "content": prompt}])
             return res.choices[0].message.content
     except Exception as e: return f"Lỗi: {e}"
 
-# ===== 4. GIAO DIỆN STREAMLIT =====
-st.set_page_config(page_title="AI Essay Pro - VNU", layout="wide")
-
-with st.sidebar:
-    st.header("⚙️ Cấu hình")
-    provider = st.selectbox("Chọn Model AI", ["Groq", "Gemini"])
-    user_key = st.text_input("Dán API Key vào đây", type="password")
-    st.divider()
-    selected_key = st.selectbox("Chọn Mã bài tập (1-9)", list(DATA_BTL.keys()))
-    current_data = DATA_BTL[selected_key]
-    btl_code = selected_key.split(":")[0]
-
-st.title("🎓 Hệ thống Tạo Tiểu luận Học thuật chuẩn VNU")
-
-col1, col2 = st.columns([1, 2])
-with col1:
-    ten_hv = st.text_input("Họ tên học viên", "Đặng Nhật Minh")
-    sbd = st.text_input("SBD", "39")
-    mon_hoc = st.text_input("Tên môn học", selected_key.split(": ")[1])
-    de_tai = st.text_area("Tên đề tài (In bìa)", current_data["de_tai"], height=100)
-
-with col2:
-    yeu_cau = st.text_area("Đề bài / Câu hỏi chi tiết", current_data["cau_hoi"], height=220)
-
-if st.button("🚀 BẮT ĐẦU VIẾT TIỂU LUẬN (12-15 TRANG)"):
+# ===== 4. QUY TRÌNH XUẤT FILE =====
+if st.button("🚀 XUẤT TIỂU LUẬN HOÀN THIỆN"):
     api_key = user_key or st.secrets.get(f"{provider.upper()}_API_KEY")
-    if not api_key: st.error("Vui lòng cung cấp API Key!"); st.stop()
-    if not os.path.exists("Bia.docx"): st.error("Thiếu file Bia.docx!"); st.stop()
+    if not api_key: st.error("Thiếu Key!"); st.stop()
+    if not os.path.exists("Bia.docx"): st.error("Thiếu Bia.docx!"); st.stop()
 
     status = st.empty(); prog = st.progress(0)
     
-    # Bước 1: Lập dàn ý chương hồi
-    status.info("📍 Đang xây dựng dàn ý chương hồi học thuật...")
-    outline_p = (
-        f"Hãy đóng vai Tiến sĩ Giáo dục, lập dàn ý tiểu luận gồm 6 phần chính cho đề tài: {de_tai}. "
-        "Yêu cầu dàn ý gồm: Mở đầu, Các chương nội dung lý luận, Chương thực tiễn tại Việt Nam, Kết luận và Danh mục tài liệu tham khảo. "
-        "Chỉ trả về tiêu đề các mục."
-    )
-    outline = call_ai(api_key, provider, outline_p)
+    # 1. AI viết nội dung
+    outline = call_ai(api_key, provider, f"Lập dàn ý 6 mục cho đề tài: {de_tai}")
     sections = [s.strip() for s in outline.split('\n') if len(s.strip()) > 10][:6]
-
-    # Bước 2: Viết nội dung chi tiết từng chương
     final_content = []
     for i, sec in enumerate(sections):
-        status.warning(f"✍️ Đang biên soạn Chương {i+1}: {sec}")
-        write_p = (
-            f"Hãy viết nội dung tiểu luận học thuật khoảng 1000 từ cho mục '{sec}' của đề tài '{de_tai}'. "
-            f"Nội dung phải giải quyết triệt để yêu cầu: {yeu_cau}. "
-            "Yêu cầu văn phong chuyên sâu, không dùng ký tự Markdown, không lời dẫn AI."
-        )
-        content = call_ai(api_key, provider, write_p)
-        final_content.append((sec, strictly_clean_content(content)))
+        status.info(f"✍️ Đang biên soạn Chương {i+1}: {sec}")
+        raw = call_ai(api_key, provider, f"Viết 1000 từ chuyên sâu cho mục '{sec}' của đề tài '{de_tai}'. Bám sát: {yeu_cau}")
+        final_content.append((sec, strictly_clean_content(raw)))
         prog.progress(int((i+1)/len(sections)*100))
 
-    # ===== 5. XUẤT FILE WORD =====
+    # 2. Xử lý Word
     doc = Document("Bia.docx")
     
     # Fill Bìa
@@ -181,46 +167,55 @@ if st.button("🚀 BẮT ĐẦU VIẾT TIỂU LUẬN (12-15 TRANG)"):
                 for run in p.runs:
                     if k in run.text:
                         run.text = run.text.replace(k, str(v))
-                        set_font_style(run)
+                        set_font_style(run, size=14)
 
-    # Trang Mục lục
+    # 3. Trang Mục lục
     doc.add_page_break()
-    p_toc = doc.add_paragraph(); p_toc.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    set_font_style(p_toc.add_run("MỤC LỤC"), size=16, bold=True)
-    add_toc(doc.add_paragraph())
+    p_toc_title = doc.add_paragraph(); p_toc_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    set_font_style(p_toc_title.add_run("MỤC LỤC"), size=16, bold=True)
+    
+    # Chèn mã mục lục (Field TOC)
+    run_toc = doc.add_paragraph().add_run()
+    fld1 = OxmlElement('w:fldChar'); fld1.set(qn('w:fldCharType'), 'begin'); run_toc._r.append(fld1)
+    instr = OxmlElement('w:instrText'); instr.set(qn('xml:space'), 'preserve'); instr.text = 'TOC \\o "1-3" \\h \\z \\u'
+    run_toc._r.append(instr)
+    fld2 = OxmlElement('w:fldChar'); fld2.set(qn('w:fldCharType'), 'separate'); run_toc._r.append(fld2)
+    fld3 = OxmlElement('w:fldChar'); fld3.set(qn('w:fldCharType'), 'end'); run_toc._r.append(fld3)
 
-    # Cấu hình lề & Đánh số trang
+    # 4. Trang Nội dung & Cấu hình lề động
     doc.add_page_break()
     section = doc.sections[-1]
-    section.top_margin, section.bottom_margin, section.left_margin, section.right_margin = Cm(2.0), Cm(2.0), Cm(3.0), Cm(2.0)
     
-    doc.sections[0].different_first_page_header_footer = True
-    f_p = section.footer.paragraphs[0] if section.footer.paragraphs else section.footer.add_paragraph()
-    f_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_pg = f_p.add_run()
-    fld1 = OxmlElement('w:fldChar'); fld1.set(qn('w:fldCharType'), 'begin'); run_pg._r.append(fld1)
-    fld2 = OxmlElement('w:instrText'); fld2.text = "PAGE"; run_pg._r.append(fld2)
-    fld3 = OxmlElement('w:fldChar'); fld3.set(qn('w:fldCharType'), 'end'); run_pg._r.append(fld3)
+    # Lấy thông số từ DATA_BTL
+    m = conf["le"]
+    section.top_margin, section.bottom_margin = Cm(m[0]), Cm(m[1])
+    section.left_margin, section.right_margin = Cm(m[2]), Cm(m[3])
+    
+    # Đánh số trang động theo vị trí trong DATA_BTL
+    doc.sections[0].different_first_page_header_footer = True 
+    footer = section.footer
+    f_p = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+    add_page_number(f_p, conf["page_pos"])
 
-    # Đổ nội dung tiểu luận
+    # 5. Đổ nội dung bài làm
     for idx, (title, text) in enumerate(final_content):
-        # Tiêu đề chương (Heading 1)
+        # Tiêu đề mục (Heading 1)
         h = doc.add_paragraph(style='Heading 1')
         clean_title = re.sub(r'^\d+[\.\s\-]+', '', title)
-        run_h = h.add_run(f"PHẦN {idx + 1}: {clean_title.upper()}")
-        set_font_style(run_h, size=14, bold=True)
+        run_h = h.add_run(f"{idx + 1}. {clean_title.upper()}")
+        set_font_style(run_h, size=conf["font_sz"], bold=True)
         
-        # Nội dung văn xuôi
+        # Văn bản tiểu luận
         for line in text.split('\n'):
             if line.strip():
                 p = doc.add_paragraph(line.strip())
                 p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-                p.paragraph_format.line_spacing = current_data["spacing"]
+                p.paragraph_format.line_spacing = conf["spacing"]
                 run_p = p.add_run() if not p.runs else p.runs[0]
-                set_font_style(run_p, size=14)
+                set_font_style(run_p, size=conf["font_sz"])
 
-    # Lưu file
-    file_name = f"TieuLuan_{btl_code}_{remove_vietnamese_accent(ten_hv)}.docx"
-    buffer = io.BytesIO(); doc.save(buffer); buffer.seek(0)
-    status.success(f"✅ Đã tạo xong tiểu luận bài {btl_code}!")
-    st.download_button(label=f"📥 Tải xuống {file_name}", data=buffer, file_name=file_name)
+    # Xuất file
+    file_name = f"BTL_{btl_code}_{remove_vietnamese_accent(ten_hv)}.docx"
+    buf = io.BytesIO(); doc.save(buf); buf.seek(0)
+    status.success(f"✅ Hoàn thành bài {btl_code}!")
+    st.download_button(label=f"📥 Tải xuống {file_name}", data=buf, file_name=file_name)
