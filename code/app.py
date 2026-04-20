@@ -118,7 +118,7 @@ with st.sidebar:
     f_sp = st.number_input("Dãn dòng", 1.0, 2.5, preset["spacing"])
     
     st.header("🔢 Đánh số trang")
-    pg_align = st.selectbox("Vị trí ngang", ["LEFT", "CENTER", "RIGHT"], index=0)
+    pg_align = st.selectbox("Vị trí ngang", ["RIGHT", "LEFT", "CENTER"], index=0)
 
     # --- KHU VỰC FIX LỖI FILE BÌA ---
     st.divider()
