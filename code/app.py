@@ -88,7 +88,7 @@ with st.sidebar:
     st.divider()
     st.header("🔢 Đánh số trang")
     pg_side = st.selectbox("Vị trí dọc", ["BOTTOM", "TOP"])
-    pg_align = st.selectbox("Vị trí ngang", ["LEFT", "CENTER", "RIGHT"])
+    pg_align = st.selectbox("Vị trí ngang", ["RIGHT","LEFT", "CENTER"])
 
 st.title("🎓 Hệ thống Tạo Tiểu luận Ultimate (VNU-HPU2 Edition)")
 
