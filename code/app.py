@@ -2,29 +2,29 @@ import streamlit as st
 import os
 import io
 import time
+import re
 from docx import Document
-from docx.shared import Pt, Cm, RGBColor
+from docx.shared import Pt, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
 # ===== 1. TIỆN ÍCH HỆ THỐNG =====
+def clean_text(text):
+    """Loại bỏ triệt để ký tự Markdown và làm sạch văn bản"""
+    # Xóa các dấu sao, thăng, gạch đầu dòng thường thấy trong Markdown
+    text = re.sub(r'[*#_~-]', '', text)
+    # Xóa các khoảng trắng thừa
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
+
 def add_toc(paragraph):
-    """Chèn mã Field TOC để Word tự động tạo mục lục"""
     run = paragraph.add_run()
-    fldChar = OxmlElement('w:fldChar')
-    fldChar.set(qn('w:fldCharType'), 'begin')
-    run._r.append(fldChar)
-    instrText = OxmlElement('w:instrText')
-    instrText.set(qn('xml:space'), 'preserve')
-    instrText.text = 'TOC \\o "1-3" \\h \\z \\u' 
+    fldChar = OxmlElement('w:fldChar'); fldChar.set(qn('w:fldCharType'), 'begin'); run._r.append(fldChar)
+    instrText = OxmlElement('w:instrText'); instrText.set(qn('xml:space'), 'preserve'); instrText.text = 'TOC \\o "1-3" \\h \\z \\u' 
     run._r.append(instrText)
-    fldChar2 = OxmlElement('w:fldChar')
-    fldChar2.set(qn('w:fldCharType'), 'separate')
-    run._r.append(fldChar2)
-    fldChar3 = OxmlElement('w:fldChar')
-    fldChar3.set(qn('w:fldCharType'), 'end')
-    run._r.append(fldChar3)
+    fldChar2 = OxmlElement('w:fldChar'); fldChar2.set(qn('w:fldCharType'), 'separate'); run._r.append(fldChar2)
+    fldChar3 = OxmlElement('w:fldChar'); fldChar3.set(qn('w:fldCharType'), 'end'); run._r.append(fldChar3)
 
 def add_page_number(paragraph, position):
     if "CENTER" in position: paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -35,16 +35,12 @@ def add_page_number(paragraph, position):
     fldChar2 = OxmlElement('w:fldChar'); fldChar2.set(qn('w:fldCharType'), 'end'); run._r.append(fldChar2)
 
 def replace_placeholders(doc, data_dict):
-    """Xử lý thay thế chính xác các tag kể cả khi Word chia nhỏ runs (Paragraph-level replacement)"""
     for p in doc.paragraphs:
-        # Kiểm tra xem paragraph có chứa bất kỳ key nào không
         for key, value in data_dict.items():
             if key in p.text:
-                # Ghi đè lại toàn bộ text của paragraph để xử lý việc run bị chia nhỏ
                 new_text = p.text.replace(key, str(value))
-                p.text = "" # Xóa nội dung cũ
-                run = p.add_run(new_text) # Thêm text mới đã thay thế
-                # Giữ định dạng cơ bản của bìa
+                p.text = ""
+                run = p.add_run(new_text)
                 run.font.name = "Times New Roman"
                 run.font.size = Pt(14)
                 if "{{TEN_CHU_DE}}" in key:
@@ -57,26 +53,24 @@ st.title("🎓 Hệ thống Tạo BTL chuẩn Quy cách HPU2")
 
 with st.sidebar:
     st.header("⚙️ Cấu hình AI")
-    # Mặc định chọn Groq
     provider = st.selectbox("AI Provider", ["Gemini", "Groq"], index=1)
     
     if provider == "Groq":
-        model_map = {"Llama 3.3 70B Versatile": "llama-3.3-70b-versatile", "Qwen 2.5 32B": "qwen-2.5-32b"}
+        model_map = {"Llama 3.3 70B": "llama-3.3-70b-versatile", "Qwen 2.5 32B": "qwen-2.5-32b"}
         model_choice = model_map[st.selectbox("Chọn Model", list(model_map.keys()))]
+        # Ô nhập Groq Key riêng biệt
+        groq_key = st.text_input("Groq API Key (Optional)", type="password")
     else:
-        model_choice = st.selectbox("Chọn Model", ["gemini-2.5-pro", "gemini-2.5-flash"])
-
-    input_key = st.text_input(f"{provider} Key (Tùy chọn)", type="password", help="Để trống sẽ dùng Key trong Secrets")
+        model_choice = st.selectbox("Chọn Model", ["gemini-2.0-pro-exp", "gemini-2.0-flash"])
+        gemini_key = st.text_input("Gemini API Key (Optional)", type="password")
 
     st.divider()
     st.subheader("📏 Cấu hình Lề & Trang")
     hoc_phan_ui = st.selectbox("Học phần", ["Giáo dục học đại cương", "Sử dụng phương tiện KH", "Lý Luận dạy học đại học", "Khác"])
     
     presets = {
-        "Giáo dục học đại cương": {"m": (2.5, 3.0, 3.0, 2.0), "sp": 1.5},
-        "Sử dụng phương tiện KH": {"m": (2.5, 3.0, 3.0, 2.0), "sp": 1.5},
-        "Lý Luận dạy học đại học": {"m": (2.0, 2.0, 2.0, 2.0), "sp": 1.3},
-        "Khác": {"m": (2.5, 3.0, 3.0, 2.0), "sp": 1.5}
+        "Giáo dục học đại cương": {"m": (2.0, 2.0, 3.0, 2.0), "sp": 1.5},
+        "Khác": {"m": (2.0, 2.0, 3.0, 2.0), "sp": 1.5}
     }
     cp = presets.get(hoc_phan_ui, presets["Khác"])
 
@@ -100,108 +94,87 @@ with col_in1:
 
 with col_in2:
     st.subheader("🤖 Yêu cầu Nội dung (AI)")
-    default_prompt = "Bằng lý luận và thực tiễn, anh (chị) hãy phân tích các chức năng xã hội của giáo dục. Từ đó, anh (chị) hãy liên hệ với việc thực hiện các chức năng này ở Việt Nam."
-    chi_tiet_ai = st.text_area("Mô tả đề bài chi tiết để AI viết bài", default_prompt, height=270)
+    chi_tiet_ai = st.text_area("Mô tả đề bài", "Phân tích các chức năng xã hội của giáo dục và liên hệ thực tiễn Việt Nam.", height=270)
 
-# ===== 4. LOGIC AI (VĂN PHONG CAO CẤP) =====
+# ===== 4. LOGIC AI (VỚI BƯỚC REVIEW) =====
 def call_ai(key, provider, prompt, model_name):
     try:
-        api_key = key or st.secrets.get(f"{provider.upper()}_API_KEY")
         if provider == "Gemini":
             import google.generativeai as genai
-            genai.configure(api_key=api_key)
+            genai.configure(api_key=key)
             model = genai.GenerativeModel(model_name)
-            res = model.generate_content(prompt); time.sleep(8); return res.text
+            res = model.generate_content(prompt); return res.text
         else:
             from groq import Groq
-            client = Groq(api_key=api_key)
+            client = Groq(api_key=key)
             res = client.chat.completions.create(model=model_name, messages=[{"role": "user", "content": prompt}])
-            time.sleep(2); return res.choices[0].message.content
+            return res.choices[0].message.content
     except Exception as e: return f"ERROR: {e}"
 
-if st.button("🚀 BẮT ĐẦU TẠO TIỂU LUẬN (12-14 TRANG)"):
-    api_key = input_key or st.secrets.get(f"{provider.upper()}_API_KEY")
-    if not api_key: st.error("❌ Không tìm thấy API Key!"); st.stop()
+if st.button("🚀 BẮT ĐẦU TẠO TIỂU LUẬN (QUY TRÌNH 3 BƯỚC)"):
+    # Xác định API Key
+    final_key = (groq_key if provider == "Groq" else gemini_key) or st.secrets.get(f"{provider.upper()}_API_KEY")
+    if not final_key: st.error("❌ Thiếu API Key!"); st.stop()
 
     status = st.empty(); prog = st.progress(0)
     
-    # Bước 1: Lập dàn ý
-    status.info("📝 Bước 1: Đang thiết lập cấu trúc tiểu luận học thuật...")
-    outline_prompt = f"""Hãy đóng vai một Tiến sĩ Giáo dục, lập dàn ý cho bài tiểu luận chuyên sâu về chủ đề: {chi_tiet_ai}. 
-    Yêu cầu: Dàn ý gồm đúng 6 mục chính (Mở đầu, 4 chương nội dung lý luận và thực tiễn, Kết luận). 
-    Mỗi mục phải thể hiện tính logic và chuyên môn cao. Chỉ trả về danh sách các đầu mục."""
+    # BƯỚC 1: LẬP DÀN Ý
+    status.info("📝 Bước 1: Lập dàn ý khoa học...")
+    outline_prompt = f"Hãy đóng vai Tiến sĩ, lập dàn ý 6 mục chính cho đề tài: {chi_tiet_ai}. Chỉ trả về các tiêu đề mục, không kèm lời dẫn."
+    outline = call_ai(final_key, provider, outline_prompt, model_choice)
+    sections = [s.strip() for s in outline.split('\n') if len(s.strip()) > 10][:6]
     
-    outline = call_ai(api_key, provider, outline_prompt, model_choice)
-    sections = [s for s in outline.split('\n') if len(s.strip()) > 5][:6]
-    
-    # Bước 2: Viết nội dung
+    # BƯỚC 2 & 3: VIẾT & REVIEW
     full_content_list = []
     for i, sec in enumerate(sections):
-        status.write(f"⏳ Đang biên soạn nội dung: {sec}")
-        # Văn phong chỉn chu, logic, hấp dẫn
-        part_prompt = f"""Hãy viết nội dung tiểu luận chuyên sâu cho mục '{sec}' của đề tài '{chi_tiet_ai}'. 
-        Yêu cầu: 
-        - Văn phong: Học thuật, trang trọng, sử dụng thuật ngữ chuyên ngành Giáo dục học.
-        - Lập luận: Logic, có sự liên kết chặt chẽ giữa lý luận và thực tiễn Việt Nam.
-        - Độ dài: Khoảng 600 từ. 
-        - Hình thức: Không sử dụng ký tự đặc biệt như *, #. Trình bày dưới dạng văn xuôi mạch lạc."""
+        status.write(f"⏳ Đang xử lý mục {i+1}: {sec}")
         
-        part = call_ai(api_key, provider, part_prompt, model_choice)
-        full_content_list.append((sec, part))
-        prog.progress(15 + int((i+1)/len(sections)*75))
+        # Viết thô
+        draft_prompt = f"Viết 700 từ chuyên sâu cho mục '{sec}' của đề tài '{chi_tiet_ai}'. Văn phong học thuật, không dùng ký tự đặc biệt, không dùng dấu * hay #."
+        draft_content = call_ai(final_key, provider, draft_prompt, model_choice)
+        
+        # Review & Humanize
+        status.write(f"🔍 Đang biên tập lại nội dung mục {i+1} để tránh 'vết' AI...")
+        review_prompt = f"""Bạn là biên tập viên tạp chí khoa học. Hãy chỉnh sửa đoạn văn sau:
+        1. Loại bỏ mọi ký tự lạ như *, #, -.
+        2. Chỉnh sửa câu văn để tự nhiên như người viết, tránh các từ lặp máy móc.
+        3. Đảm bảo tính liên kết với các phần trước đó.
+        NỘI DUNG: {draft_content}"""
+        
+        polished_content = call_ai(final_key, provider, review_prompt, model_choice)
+        # Làm sạch kỹ thuật lần cuối bằng Regex
+        final_text = clean_text(polished_content)
+        
+        full_content_list.append((sec, final_text))
+        prog.progress(int((i+1)/len(sections)*100))
 
-    # Bước 3: Đổ vào Template & Định dạng Word
-    template_path = "DeThi/Template.docx"
-    doc = Document(template_path) if os.path.exists(template_path) else Document()
-
-    # Fill Bìa triệt để
-    replace_placeholders(doc, {
-        "{{CHUYEN_DE}}": ten_mon_bia.upper(), 
-        "{{TEN_CHU_DE}}": ten_chu_de_bia.upper(), 
-        "{{HO_TEN}}": ten_hoc_vien, 
-        "{{SBD}}": so_bao_danh
-    })
-
-    # Căn lề & Ẩn số trang bìa
+    # ===== 5. XUẤT FILE WORD =====
+    doc = Document()
+    # Cấu hình lề
     section = doc.sections[0]
-    section.different_first_page_header_footer = True 
     section.top_margin, section.bottom_margin = Cm(m_top), Cm(m_bottom)
     section.left_margin, section.right_margin = Cm(m_left), Cm(m_right)
     
-    # Đánh số trang
-    target_para = section.header.paragraphs[0] if page_pos == "TOP_CENTER" else (section.footer.paragraphs[0] if section.footer.paragraphs else section.footer.add_paragraph())
-    add_page_number(target_para, page_pos)
+    # Header/Footer số trang
+    add_page_number(section.footer.paragraphs[0] if section.footer.paragraphs else section.footer.add_paragraph(), page_pos)
 
-    # Trang Mục lục
-    doc.add_page_break()
-    p_toc_title = doc.add_paragraph("MỤC LỤC", style='Heading 1')
-    p_toc_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    add_toc(doc.add_paragraph())
-    doc.add_page_break()
-
-    # Đổ nội dung: Đầu mục in đậm + Xuống dòng
+    # Đổ nội dung
     for title, content in full_content_list:
-        # 1. Thêm đầu mục in đậm
         h = doc.add_paragraph()
-        h_run = h.add_run(title.upper())
+        h_run = h.add_run(clean_text(title).upper())
         h_run.bold = True
-        h_run.font.name = "Times New Roman"
         h_run.font.size = Pt(14)
-        h_run._element.rPr.rFonts.set(qn('w:eastAsia'), "Times New Roman")
         
-        # 2. Thêm nội dung xuống dòng
         for line in content.split('\n'):
             if line.strip():
                 p = doc.add_paragraph(line)
                 p.paragraph_format.line_spacing = line_sp
                 p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-                run = p.add_run() if not p.runs else p.runs[0]
+                run = p.runs[0] if p.runs else p.add_run()
                 run.font.name = "Times New Roman"
                 run.font.size = Pt(font_sz)
-                run._element.rPr.rFonts.set(qn('w:eastAsia'), "Times New Roman")
 
-    # Lưu & Xuất file
     buffer = io.BytesIO()
     doc.save(buffer); buffer.seek(0)
-    prog.progress(100); status.success("🎉 Bài tiểu luận đã hoàn thành xuất sắc!")
-    st.download_button("📥 Tải Bài Tập Lớn Hoàn Thiện", buffer, file_name=f"BTL_{ten_hoc_vien}.docx")
+    status.success("🎉 Đã hoàn thành và 'nhân bản' văn phong người viết thành công!")
+    st.download_button("📥 Tải BTL đã qua kiểm duyệt", buffer, file_name=f"BTL_{ten_mon_bia}_{ten_hoc_vien}.docx")
